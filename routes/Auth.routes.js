@@ -7,8 +7,17 @@ const { signAccessToken } = require('../helpers/jwt')
 
 router.post("/login", async (req, res, next) => {
     try {
-        const { email, password } = req.body;
-        if (!email || !password) throw createError.BadRequest()
+        // const { email, password } = req.body;
+        // if (!email || !password) throw createError.BadRequest()
+        const result = await authSchema.validateAsync(req.body);
+        const user = await User.findOne({ email: result.email });
+        if (!user) throw createError.BadRequest('user name not found');
+        const isMatch = await user.isValidPassword(result.password);
+        if (!isMatch) throw createError.Unauthorized('password is not valid');
+
+        const accessToken = await signAccessToken(user.id)
+
+        res.send({ accessToken ,date:new Date() });
 
     } catch (err) {
         next(err)
