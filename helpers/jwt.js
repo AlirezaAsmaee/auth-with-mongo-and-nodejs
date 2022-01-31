@@ -23,5 +23,18 @@ module.exports = {
                 resolve(token);
             })
         })
+    },
+    verifyAccessToken: async (req, res, next) => {
+        if (!req.headers['authorization']) return next(createError.Unauthorized());
+        const authHeader = req.headers['authorization'];
+        const token = authHeader.split(' ')[1];
+        JWT.verify(token, 'asmaee', (err, payload) => {
+            if (err) {
+                return next(createError.Unauthorized());
+            }
+            req.payload = payload;
+            next()
+        })
+
     }
 }
