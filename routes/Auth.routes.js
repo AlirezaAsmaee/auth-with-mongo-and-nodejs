@@ -3,7 +3,7 @@ const router = express.Router();
 const createError = require('http-errors');
 const User = require('../models/User.model');
 const { authSchema } = require('../helpers/validation_schema')
-const { signAccessToken } = require('../helpers/jwt')
+const { signAccessToken, refreshToken, verifyRefreshToken } = require('../helpers/jwt')
 
 router.post("/login", async (req, res, next) => {
     try {
@@ -16,11 +16,31 @@ router.post("/login", async (req, res, next) => {
         if (!isMatch) throw createError.Unauthorized('password is not valid');
 
         const accessToken = await signAccessToken(user.id)
+        const refresh = await refreshToken(user.id)
 
-        res.send({ accessToken ,date:new Date() });
+        res.send({ accessToken, date: new Date(), refresh });
 
     } catch (err) {
         next(err)
+    }
+})
+
+router.post("/refresh-token", async (req, res, next) => {
+
+    try {
+
+        const { refresh } = req.body;
+        if (!refresh) throw createError.BadRequest();
+        const userId = await verifyRefreshToken(refresh);
+        const accessToken = await signAccessToken(userId)
+        const ref = await refreshToken(userId)
+        res.send({ accessToken, date: new Date(), ref });
+
+
+
+    } catch (e) {
+        console.log({ ...e });
+        next(e)
     }
 })
 
@@ -45,10 +65,7 @@ router.post("/register", async (req, res, next) => {
 
 })
 
-router.post("/refresh-token", async (req, res, next) => {
-    res.send('refresh-token')
 
-})
 
 router.post("/log-out", async (req, res, next) => {
     res.send('log-out')
